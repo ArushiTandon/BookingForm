@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Appointment App</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="container my-4">
+
+  <h1 class="text-center mb-4">BOOKING APPOINTMENT APP</h1>
+  
+  <form id="bookingForm" onsubmit="userDetails(event)" class="border p-4 shadow-sm rounded">
+
+    <div class="mb-3">
+      <input type="hidden" id="id" name="id" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+      <label for="username" class="form-label">UserName:</label>
+      <input type="text" id="username" name="username" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="phone" class="form-label">Phone Number:</label>
+      <input type="tel" id="phone" name="phone" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">Email:</label>
+      <input type="email" id="email" name="email" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">Submit</button>
+  </form>
+
+  <ul class="user-list list-group mt-4"></ul>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <script>
+    function userDetails(event) {
+  event.preventDefault();
+  const id = event.target.id.value;
+  const name = event.target.username.value;
+  const email = event.target.email.value;
+  const phone = event.target.phone.value;
+  
+  const obj = { name, email, phone };
+  
+  if (id) {
+    axios.post(`http://localhost:3000/user/edit-user/${id}`, obj)
+      .then((res) => {
+        console.log(res);
+        updateUserUI(res.data.user);
+        clearFormFields();
+        loadDetails();
+      })
+      .catch((err) => {
+        console.log(err.response?.data || err.message);
+        document.body.innerHTML += "<h4> Something Went Wrong! <h4>";
+      });
+  } else {
+    axios.post(`http://localhost:3000/register`, obj)
+      .then((res) => {
+        console.log(res);
+        displayUser(res.data.user);
+        clearFormFields(); 
+        loadDetails();
+      })
+      .catch((err) => {
+        console.log(err.response?.data || err.message);
+        document.body.innerHTML += "<h4> Something Went Wrong! <h4>";
+      });
+  }
+}
+
+function clearFormFields() {
+  document.getElementById('id').value = '';
+  document.getElementById('username').value = '';
+  document.getElementById('phone').value = '';
+  document.getElementById('email').value = '';
+}
+
+function displayUser(user) {
+  const userList = document.querySelector(".user-list");
+  const userData = document.createElement("li");
+  userData.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+  userData.id = `user-${user.id}`; 
+
+  updateUserData(userData, user);
+  userList.appendChild(userData);
+}
+
+function updateUserUI(user) {
+  const existingUserData = document.getElementById(`user-${user.id}`);
+  
+  if (existingUserData) {
+    updateUserData(existingUserData, user); // Update the user data
+  } else {
+    displayUser(user); // If not found add as a new user
+  }
+}
+
+function updateUserData(userData, user) {
+  userData.innerHTML = `${user.name} - ${user.email}`;
+
+  // Edit button
+  const editBtn = document.createElement("button");
+  editBtn.textContent = "Edit";
+  editBtn.classList.add("btn", "btn-secondary", "btn-sm", "me-2");
+  editBtn.onclick = () => {
+    document.getElementById('id').value = user.id;
+    document.getElementById('username').value = user.name;
+    document.getElementById('phone').value = user.phone;
+    document.getElementById('email').value = user.email;
+  };
+  userData.appendChild(editBtn);
+
+  // Delete button
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "Delete";
+  deleteBtn.classList.add("btn", "btn-danger", "btn-sm");
+  deleteBtn.onclick = () => {
+    axios.delete(`http://localhost:3000/user/delete-user/${user.id}`)
+      .then(() => {
+        userData.remove();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    };
+  userData.appendChild(deleteBtn);
+  }
+
+    function loadDetails() {
+      axios.get(`http://localhost:3000/user/get-user`)
+        .then((res) => {
+          const userList = document.querySelector(".user-list");
+          userList.innerHTML = "";
+          console.log(res.data);
+          res.data.forEach(user => {
+            displayUser(user);
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+    window.onload = loadDetails;
+  </script>
+
+  <!-- Bootstrap JS Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
